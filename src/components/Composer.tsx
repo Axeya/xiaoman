@@ -63,7 +63,7 @@ export function Composer({ date, onSaved }: ComposerProps) {
   return (
     <div>
       {/* 记录/待办 切换（靠左） */}
-      <div className="mb-1.5 flex self-start rounded-full bg-mist p-0.5 text-[11px]">
+      <div className="mb-1.5 inline-flex rounded-full bg-mist p-0.5 text-[11px]">
         {(['note', 'todo'] as const).map((k) => (
           <button
             key={k}
@@ -123,7 +123,7 @@ export function Composer({ date, onSaved }: ComposerProps) {
           <input
             autoFocus
             value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
+            onChange={(e) => setText(e.target.value)}
             onBlur={confirmNewTag}
             onKeyDown={(e) => {
               if (e.key === 'Enter') confirmNewTag()
