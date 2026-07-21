@@ -123,7 +123,7 @@ export function Composer({ date, onSaved }: ComposerProps) {
           <input
             autoFocus
             value={newTag}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => setNewTag(e.target.value)}
             onBlur={confirmNewTag}
             onKeyDown={(e) => {
               if (e.key === 'Enter') confirmNewTag()
