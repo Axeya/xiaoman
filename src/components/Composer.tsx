@@ -62,6 +62,21 @@ export function Composer({ date, onSaved }: ComposerProps) {
 
   return (
     <div>
+      {/* 记录/待办 切换（靠左） */}
+      <div className="mb-1.5 flex self-start rounded-full bg-mist p-0.5 text-[11px]">
+        {(['note', 'todo'] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setKind(k)}
+            className={`rounded-full px-2.5 py-0.5 ${
+              kind === k ? 'bg-white font-medium text-ink shadow-sm' : 'text-softgray'
+            }`}
+          >
+            {k === 'note' ? '记录' : '待办'}
+          </button>
+        ))}
+      </div>
       <div className="flex items-end gap-2 border-b border-mist pb-2">
         <textarea
           ref={textareaRef}
@@ -79,21 +94,6 @@ export function Composer({ date, onSaved }: ComposerProps) {
           className="min-w-0 flex-1 resize-none overflow-y-auto bg-transparent text-[15px] leading-relaxed outline-none placeholder:text-softgray"
         />
         <div className="flex shrink-0 flex-col items-end gap-1.5 pb-0.5">
-          {/* 记录/待办 切换 */}
-          <div className="flex rounded-full bg-mist p-0.5 text-[11px]">
-            {(['note', 'todo'] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setKind(k)}
-                className={`rounded-full px-2.5 py-0.5 ${
-                  kind === k ? 'bg-white font-medium text-ink shadow-sm' : 'text-softgray'
-                }`}
-              >
-                {k === 'note' ? '记录' : '待办'}
-              </button>
-            ))}
-          </div>
           <button
             type="button"
             onClick={submit}
