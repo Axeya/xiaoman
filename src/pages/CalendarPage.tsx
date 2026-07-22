@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Item } from '@/types'
 import { useStore } from '@/store/useStore'
-import { dayHasContent, mergedItemsForDate, tombstoneKeys } from '@/lib/schedule'
+import { mergedItemsForDate, tombstoneKeys } from '@/lib/schedule'
 import { formatCnDate, monthGrid, todayISO, weekdayCn } from '@/lib/dateUtils'
 import { Composer } from '@/components/Composer'
 import { DayList } from '@/components/DayList'
@@ -9,6 +9,14 @@ import { BackfillDialog } from '@/components/BackfillDialog'
 import { EditItemDialog } from '@/components/EditItemDialog'
 
 const WEEKDAY_HEADS = ['一', '二', '三', '四', '五', '六', '日']
+
+/** 热力档位：记录越多颜色越深（1-2 浅蓝 / 3-4 中蓝 / 5+ 深蓝） */
+function heatClass(done: number): string {
+  if (done >= 5) return 'bg-blue font-medium text-white'
+  if (done >= 3) return 'bg-[#7E9BF6] font-medium text-white'
+  if (done >= 1) return 'bg-[#C9D6FC] text-ink'
+  return 'bg-mist text-softgray'
+}
 
 export default function CalendarPage() {
   const items = useStore((s) => s.items)
@@ -30,13 +38,27 @@ export default function CalendarPage() {
 
   const deleted = useMemo(() => tombstoneKeys(courseDeleted), [courseDeleted])
   const cells = useMemo(() => monthGrid(year, month0), [year, month0])
-  const contentDays = useMemo(() => {
-    const set = new Set<string>()
+  // 热力：done 数决定深浅；未来有待办 → 右上角小点，不点亮
+  const dayStats = useMemo(() => {
+    const map = new Map<string, { done: number; futureTodo: boolean }>()
+    const today = todayISO()
     for (const iso of cells) {
-      if (iso && dayHasContent(iso, items, templates, semester, holidays, makeupDays, deleted)) set.add(iso)
+      if (!iso) continue
+      const dayItems = mergedItemsForDate(iso, items, templates, semester, holidays, makeupDays, deleted)
+      map.set(iso, {
+        done: dayItems.filter((e) => e.status === 'done').length,
+        futureTodo: iso > today && dayItems.some((e) => e.status === 'todo'),
+      })
     }
-    return set
+    return map
   }, [cells, items, templates, semester, holidays, makeupDays, deleted])
+  const touchedDays = useMemo(() => {
+    let n = 0
+    dayStats.forEach((s) => {
+      if (s.done > 0) n += 1
+    })
+    return n
+  }, [dayStats])
 
   const selectedItems = useMemo(
     () => mergedItemsForDate(selected, items, templates, semester, holidays, makeupDays, deleted),
@@ -77,10 +99,10 @@ export default function CalendarPage() {
         </div>
       </header>
       <p className="mt-1 text-[13px] text-softgray">
-        {contentDays.size > 0 ? `这个月你留下了 ${contentDays.size} 天的痕迹` : '这一页还等着你的第一笔'}
+        {touchedDays > 0 ? `这个月你留下了 ${touchedDays} 天的痕迹` : '这一页还等着你的第一笔'}
       </p>
 
-      {/* 月视图热力图：圆角小方块 */}
+      {/* 月视图热力图：颜色越深记录越多；未来有待办只画小点 */}
       <div className="mt-4 grid grid-cols-7 gap-1.5">
         {WEEKDAY_HEADS.map((w) => (
           <div key={w} className="pb-1 text-center text-[11px] text-softgray">
@@ -90,19 +112,23 @@ export default function CalendarPage() {
         {cells.map((iso, i) => {
           if (!iso) return <div key={`blank-${i}`} className="aspect-square" />
           const dayNum = Number(iso.slice(8, 10))
-          const has = contentDays.has(iso)
+          const stat = dayStats.get(iso) ?? { done: 0, futureTodo: false }
+          const has = stat.done > 0
           const isToday = iso === today
           const isSelected = iso === selected
           return (
             <button key={iso} type="button" onClick={() => setSelected(iso)} className="aspect-square">
               <span
-                className={`flex h-full w-full items-center justify-center rounded-md text-[13px] transition-colors ${
-                  has ? 'bg-blue font-medium text-white' : 'bg-mist text-softgray'
-                } ${isToday && !has ? 'bg-white ring-[1.5px] ring-inset ring-blue text-blue' : ''} ${
-                  isToday && has ? 'ring-2 ring-inset ring-white/70' : ''
-                } ${isSelected && !isToday && !has ? 'ring-[1.5px] ring-inset ring-softgray/50' : ''}`}
+                className={`relative flex h-full w-full items-center justify-center rounded-md text-[13px] transition-colors ${
+                  isToday && !has ? 'bg-white text-blue ring-[1.5px] ring-inset ring-blue' : heatClass(stat.done)
+                } ${isToday && has ? 'ring-[1.5px] ring-inset ring-blue' : ''} ${
+                  isSelected && !isToday && !has ? 'ring-[1.5px] ring-inset ring-softgray/50' : ''
+                }`}
               >
                 {dayNum}
+                {stat.futureTodo && (
+                  <span className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-blue" />
+                )}
               </span>
             </button>
           )
