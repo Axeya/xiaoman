@@ -7,6 +7,7 @@ import { Composer } from '@/components/Composer'
 import { DayList } from '@/components/DayList'
 import { BackfillDialog } from '@/components/BackfillDialog'
 import { EditItemDialog } from '@/components/EditItemDialog'
+import { BackupDialog } from '@/components/BackupDialog'
 
 export default function TodayPage() {
   const items = useStore((s) => s.items)
@@ -22,6 +23,7 @@ export default function TodayPage() {
   const [date, setDate] = useState(todayISO())
   const [backfilling, setBackfilling] = useState<Item | null>(null)
   const [editing, setEditing] = useState<Item | null>(null)
+  const [backupOpen, setBackupOpen] = useState(false)
 
   const deleted = useMemo(() => tombstoneKeys(courseDeleted), [courseDeleted])
   const isToday = date === todayISO()
@@ -99,8 +101,17 @@ export default function TodayPage() {
         />
       </section>
 
+      {/* 备份入口：低调放在页尾 */}
+      <hr className="mt-8 border-mist" />
+      <div className="mt-4 flex justify-center">
+        <button type="button" onClick={() => setBackupOpen(true)} className="text-[13px] text-softgray">
+          备份与恢复
+        </button>
+      </div>
+
       <BackfillDialog item={backfilling} onClose={() => setBackfilling(null)} />
       <EditItemDialog item={editing} onClose={() => setEditing(null)} />
+      <BackupDialog open={backupOpen} onClose={() => setBackupOpen(false)} />
     </div>
   )
 }
